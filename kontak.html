@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kontak & Formulir Pemesanan — Aplikasiku.nd</title>
+  <meta name="description" content="Hubungi Aplikasiku.nd melalui WhatsApp atau formulir pemesanan. Konsultasi gratis untuk kebutuhan aplikasi bisnis, sekolah, yayasan, dan organisasi.">
+  <link rel="canonical" href="">
+  <meta property="og:title" content="Kontak & Formulir Pemesanan — Aplikasiku.nd">
+  <meta property="og:image" content="assets/img/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="kontak">
+
+  <header class="navbar">
+    <div class="container navbar__inner">
+      <a href="index.html" class="navbar__logo" aria-label="Beranda Aplikasiku.nd">
+        <img src="assets/img/logo.svg" data-brand-logo alt="Logo Aplikasiku.nd — Kerja Jadi Lebih Mudah">
+      </a>
+      <nav class="navbar__menu" aria-label="Navigasi utama">
+        <a class="navbar__link" data-nav="home" href="index.html">Beranda</a>
+        <a class="navbar__link" data-nav="katalog" href="katalog.html">Katalog Aplikasi</a>
+        <a class="navbar__link" data-nav="kategori" href="kategori.html">Kategori</a>
+        <a class="navbar__link" data-nav="layanan" href="layanan.html">Layanan</a>
+        <a class="navbar__link" data-nav="tentang" href="tentang.html">Tentang Kami</a>
+        <a class="navbar__link" data-nav="kontak" href="kontak.html">Kontak</a>
+        <a class="btn btn--primary btn--sm navbar__cta" href="kontak.html">Konsultasi Gratis</a>
+      </nav>
+      <button class="navbar__toggle" aria-label="Buka menu"><i class="fa-solid fa-bars"></i></button>
+    </div>
+  </header>
+  <nav class="mobile-menu" aria-label="Navigasi mobile">
+    <a data-nav="home" href="index.html">Beranda</a>
+    <a data-nav="katalog" href="katalog.html">Katalog Aplikasi</a>
+    <a data-nav="kategori" href="kategori.html">Kategori</a>
+    <a data-nav="layanan" href="layanan.html">Layanan</a>
+    <a data-nav="tentang" href="tentang.html">Tentang Kami</a>
+    <a data-nav="kontak" href="kontak.html">Kontak</a>
+    <a class="btn btn--primary" href="kontak.html">Konsultasi Gratis</a>
+  </nav>
+
+  <main>
+    <section class="page-hero">
+      <div class="container page-hero__inner">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="index.html">Beranda</a><i class="fa-solid fa-chevron-right"></i><span class="is-current">Kontak</span>
+        </nav>
+        <h1>Kontak &amp; Formulir Pemesanan</h1>
+        <p>Ceritakan kebutuhan aplikasi Anda. Tim kami akan menghubungi melalui WhatsApp untuk menjadwalkan konsultasi gratis.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:44px">
+      <div class="container contact-grid">
+        <div>
+          <div class="contact-card">
+            <div class="icon-box"><i class="fa-brands fa-whatsapp"></i></div>
+            <div><h3>WhatsApp (Cepat)</h3><p>Jawaban paling cepat pada jam kerja.</p><a data-set-wa href="#" target="_blank" rel="noopener">Chat Sekarang</a></div>
+          </div>
+          <div class="contact-card">
+            <div class="icon-box icon-box--orange"><i class="fa-solid fa-envelope"></i></div>
+            <div><h3>Email</h3><p>Untuk penawaran resmi dan dokumen.</p><a data-set-email href="#">kontak@aplikasiku.nd</a></div>
+          </div>
+          <div class="contact-card">
+            <div class="icon-box icon-box--green"><i class="fa-solid fa-clock"></i></div>
+            <div><h3>Jam Operasional</h3><p><span data-set-hours>Senin - Sabtu, 08.00 - 17.00 WIB</span></p></div>
+          </div>
+          <div class="contact-card">
+            <div class="icon-box icon-box--purple"><i class="fa-solid fa-location-dot"></i></div>
+            <div><h3>Cakupan Layanan</h3><p><span data-set-address>Melayani seluruh Indonesia secara online</span></p></div>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <h3>Formulir Permintaan Aplikasi</h3>
+          <p>Isi se lengkap mungkin agar tim kami dapat menyiapkan penawaran yang tepat.</p>
+          <div id="app-context" style="display:none;align-items:center;gap:10px;background:var(--blue-soft);border:1px solid #C7DBFF;border-radius:12px;padding:12px 16px;margin-bottom:18px;font-size:.88rem;color:var(--navy-700)"></div>
+          <form id="inq-form" class="form-grid" novalidate>
+            <input type="hidden" id="f-application-id" value="">
+            <input type="hidden" id="f-application-name" value="">
+            <div class="field"><label>Nama Lengkap <span class="req">*</span></label><input id="f-nama" type="text" placeholder="Nama Anda" required></div>
+            <div class="field"><label>Nama Perusahaan / Lembaga</label><input id="f-lembaga" type="text" placeholder="cth: SMK Nusantara"></div>
+            <div class="field"><label>Nomor WhatsApp <span class="req">*</span></label><input id="f-wa" type="tel" placeholder="08xx / 628xx" required></div>
+            <div class="field"><label>Email <span class="req">*</span></label><input id="f-email" type="email" placeholder="nama@email.com" required></div>
+            <div class="field field--full"><label>Jenis Aplikasi yang Dibutuhkan <span class="req">*</span></label><select id="f-jenis" required><option value="" disabled selected>Pilih jenis aplikasi...</option></select></div>
+            <div class="field field--full"><label>Deskripsi Kebutuhan <span class="req">*</span></label><textarea id="f-deskripsi" rows="4" placeholder="Ceritakan masalah yang ingin diselesaikan dan proses kerja saat ini..." required></textarea></div>
+            <div class="field field--full"><label>Fitur yang Diinginkan</label><textarea id="f-fitur" rows="3" placeholder="cth: absensi online, rekap otomatis, laporan PDF..."></textarea></div>
+            <div class="field"><label>Estimasi Anggaran</label>
+              <select id="f-budget">
+                <option value="">Belum menentukan</option>
+                <option>Kurang dari Rp 2 juta</option>
+                <option>Rp 2 - 5 juta</option>
+                <option>Rp 5 - 15 juta</option>
+                <option>Lebih dari Rp 15 juta</option>
+              </select>
+            </div>
+            <div class="field"><label>Target Penyelesaian</label><input id="f-target" type="date"><span class="hint">Kosongkan bila fleksibel.</span></div>
+            <div class="form-actions">
+              <button class="btn btn--primary btn--lg" type="submit"><i class="fa-solid fa-paper-plane"></i> Kirim Permintaan</button>
+              <span class="form-note"><i class="fa-solid fa-shield-halved"></i> Data Anda aman &amp; hanya untuk keperluan konsultasi</span>
+            </div>
+          </form>
+          <div id="inq-success" class="success-panel" style="display:none">
+            <i class="fa-solid fa-check"></i>
+            <h3>Permintaan Terkirim!</h3>
+            <p>Terima kasih. Permintaan Anda telah masuk ke dashboard kami sebagai prospek dan akan segera ditindaklanjuti.<br>Ingin lebih cepat? Lanjutkan percakapan melalui WhatsApp.</p>
+            <a id="wa-continue" class="btn btn--wa" href="#" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Lanjutkan via WhatsApp</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--soft">
+      <div class="container">
+        <div class="section__head">
+          <span class="eyebrow"><i class="fa-solid fa-circle-question"></i> FAQ</span>
+          <h2>Pertanyaan yang Sering Diajukan</h2>
+        </div>
+        <div class="faq-list" id="faq-list">
+          <div class="skeleton" style="height:64px"></div><div class="skeleton" style="height:64px"></div><div class="skeleton" style="height:64px"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__grid">
+        <div class="footer__brand">
+          <img src="assets/img/logo-white.svg" data-brand-logo-light alt="Aplikasiku.nd — Kerja Jadi Lebih Mudah">
+          <p>Platform katalog dan pengembangan aplikasi digital untuk bisnis, lembaga, sekolah, dan organisasi. <b data-set-tagline>Kerja Jadi Lebih Mudah</b>.</p>
+          <div class="social-links">
+            <a data-social="instagram" href="#" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+            <a data-social="facebook" href="#" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+            <a data-social="tiktok" href="#" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+            <a data-social="youtube" href="#" target="_blank" rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+            <a data-social="linkedin" href="#" target="_blank" rel="noopener" aria-label="LinkedIn Aplikasiku.nd"><i class="fa-brands fa-linkedin-in"></i></a>
+            <a data-set-wa href="#" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+          </div>
+        </div>
+        <div>
+          <div class="footer__title">Menu</div>
+          <ul class="footer__links">
+            <li><a href="index.html"><i class="fa-solid fa-angle-right"></i>Beranda</a></li>
+            <li><a href="katalog.html"><i class="fa-solid fa-angle-right"></i>Katalog Aplikasi</a></li>
+            <li><a href="kategori.html"><i class="fa-solid fa-angle-right"></i>Kategori</a></li>
+            <li><a href="layanan.html"><i class="fa-solid fa-angle-right"></i>Layanan</a></li>
+            <li><a href="tentang.html"><i class="fa-solid fa-angle-right"></i>Tentang Kami</a></li>
+            <li><a href="blog.html"><i class="fa-solid fa-angle-right"></i>Blog</a></li>
+            <li><a href="kontak.html"><i class="fa-solid fa-angle-right"></i>Kontak</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="footer__title">Kategori Populer</div>
+          <ul class="footer__links" id="footer-cats"></ul>
+        </div>
+        <div>
+          <div class="footer__title">Kontak</div>
+          <ul class="footer__contact">
+            <li><i class="fa-brands fa-whatsapp"></i><a data-set-wa href="#" target="_blank" rel="noopener">WhatsApp Konsultasi</a></li>
+            <li><i class="fa-solid fa-envelope"></i><a data-set-email href="#">kontak@aplikasiku.nd</a></li>
+            <li><i class="fa-solid fa-clock"></i><span data-set-hours>Senin - Sabtu, 08.00 - 17.00 WIB</span></li>
+            <li><i class="fa-solid fa-location-dot"></i><span data-set-address>Melayani seluruh Indonesia secara online</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <div>© <span data-year>2026</span> Aplikasiku.nd — <span data-footer-note>Kerja Jadi Lebih Mudah.</span></div>
+        <div><a href="katalog.html">Katalog</a> &nbsp;·&nbsp; <a href="layanan.html">Layanan</a> &nbsp;·&nbsp; <a href="login.html">Login Admin</a></div>
+      </div>
+    </div>
+  </footer>
+
+  <a class="wa-float" data-set-wa href="#" target="_blank" rel="noopener" aria-label="Chat WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+
+  <script src="js/config.js"></script>
+  <script src="js/demo-data.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase.js" defer></script>
+  <script src="js/app.js" defer></script>
+</body>
+</html>

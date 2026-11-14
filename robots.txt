@@ -1,0 +1,7 @@
+# robots.txt — Aplikasiku.nd
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /login.html
+
+Sitemap: https://www.aplikasiku.nd/sitemap.xml
