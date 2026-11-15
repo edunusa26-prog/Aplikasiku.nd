@@ -5,6 +5,10 @@
 --
 -- CARA PAKAI: buka Supabase Dashboard -> SQL Editor -> New query ->
 -- salin SELURUH file ini -> Run. (Lihat docs/PANDUAN-LENGKAP.md Bagian 2)
+--
+-- Versi 2: is_admin() dibuat SETELAH tabel admins (fungsi SQL divalidasi
+-- PostgreSQL saat pembuatan — bila tabel belum ada muncul error 42P01),
+-- dan semua policy di-drop dulu sehingga file AMAN DIJALANKAN ULANG.
 -- ============================================================================
 
 -- ---------------------------------------------------------------------------
@@ -27,19 +31,6 @@ begin
 end;
 $$;
 
--- Cek apakah user saat ini terdaftar sebagai admin
-create or replace function public.is_admin()
-returns boolean
-language sql
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1 from public.admins
-    where user_id = auth.uid()
-  );
-$$;
-
 -- ---------------------------------------------------------------------------
 -- 2. TABEL ADMINS (otorisasi dashboard)
 --    User pertama yang mendaftar otomatis menjadi admin (lihat trigger di bawah).
@@ -53,14 +44,33 @@ create table if not exists public.admins (
 
 alter table public.admins enable row level security;
 
+-- Cek apakah user saat ini terdaftar sebagai admin.
+-- PENTING: fungsi ini dibuat SETELAH tabel admins. Body fungsi language sql
+-- divalidasi PostgreSQL saat pembuatan — jika tabel belum ada, muncul error
+-- 42P01 "relation does not exist" (penyebab kegagalan pada versi skema lama).
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.admins
+    where user_id = auth.uid()
+  );
+$$;
+
+drop policy if exists "Admin boleh melihat daftar admin" on public.admins;
 create policy "Admin boleh melihat daftar admin"
   on public.admins for select
   using (user_id = auth.uid() or public.is_admin());
 
+drop policy if exists "Admin boleh menambah admin" on public.admins;
 create policy "Admin boleh menambah admin"
   on public.admins for insert
   with check (public.is_admin());
 
+drop policy if exists "Admin boleh menghapus admin" on public.admins;
 create policy "Admin boleh menghapus admin"
   on public.admins for delete
   using (public.is_admin());
@@ -270,18 +280,23 @@ alter table public.faqs              enable row level security;
 alter table public.posts             enable row level security;
 
 -- categories
+drop policy if exists "Publik dapat membaca kategori" on public.categories;
 create policy "Publik dapat membaca kategori" on public.categories
   for select using (true);
+drop policy if exists "Admin mengelola kategori" on public.categories;
 create policy "Admin mengelola kategori" on public.categories
   for all using (public.is_admin()) with check (public.is_admin());
 
 -- applications
+drop policy if exists "Publik dapat membaca aplikasi" on public.applications;
 create policy "Publik dapat membaca aplikasi" on public.applications
   for select using (true);
+drop policy if exists "Admin mengelola aplikasi" on public.applications;
 create policy "Admin mengelola aplikasi" on public.applications
   for all using (public.is_admin()) with check (public.is_admin());
 
 -- inquiries: publik hanya boleh MENGIRIM; membaca/mengubah hanya admin
+drop policy if exists "Publik dapat mengirim permintaan" on public.inquiries;
 create policy "Publik dapat mengirim permintaan" on public.inquiries
   for insert with check (
     char_length(coalesce(full_name,'')) between 2 and 120
@@ -289,38 +304,50 @@ create policy "Publik dapat mengirim permintaan" on public.inquiries
     and position('@' in coalesce(email,'')) > 1
     and char_length(coalesce(description,'')) >= 5
   );
+drop policy if exists "Admin membaca prospek" on public.inquiries;
 create policy "Admin membaca prospek" on public.inquiries
   for select using (public.is_admin());
+drop policy if exists "Admin mengubah prospek" on public.inquiries;
 create policy "Admin mengubah prospek" on public.inquiries
   for update using (public.is_admin()) with check (public.is_admin());
+drop policy if exists "Admin menghapus prospek" on public.inquiries;
 create policy "Admin menghapus prospek" on public.inquiries
   for delete using (public.is_admin());
 
 -- follow_ups: hanya admin
+drop policy if exists "Admin mengelola follow-up" on public.follow_ups;
 create policy "Admin mengelola follow-up" on public.follow_ups
   for all using (public.is_admin()) with check (public.is_admin());
 
 -- testimonials: publik hanya melihat yang aktif
+drop policy if exists "Publik membaca testimoni aktif" on public.testimonials;
 create policy "Publik membaca testimoni aktif" on public.testimonials
   for select using (is_active = true);
+drop policy if exists "Admin mengelola testimoni" on public.testimonials;
 create policy "Admin mengelola testimoni" on public.testimonials
   for all using (public.is_admin()) with check (public.is_admin());
 
 -- website_settings: publik baca, admin tulis
+drop policy if exists "Publik membaca pengaturan" on public.website_settings;
 create policy "Publik membaca pengaturan" on public.website_settings
   for select using (true);
+drop policy if exists "Admin mengelola pengaturan" on public.website_settings;
 create policy "Admin mengelola pengaturan" on public.website_settings
   for all using (public.is_admin()) with check (public.is_admin());
 
 -- faqs: publik hanya melihat yang aktif
+drop policy if exists "Publik membaca FAQ aktif" on public.faqs;
 create policy "Publik membaca FAQ aktif" on public.faqs
   for select using (is_active = true);
+drop policy if exists "Admin mengelola FAQ" on public.faqs;
 create policy "Admin mengelola FAQ" on public.faqs
   for all using (public.is_admin()) with check (public.is_admin());
 
 -- posts: publik hanya melihat yang terbit
+drop policy if exists "Publik membaca artikel terbit" on public.posts;
 create policy "Publik membaca artikel terbit" on public.posts
   for select using (is_published = true);
+drop policy if exists "Admin mengelola artikel" on public.posts;
 create policy "Admin mengelola artikel" on public.posts
   for all using (public.is_admin()) with check (public.is_admin());
 
@@ -331,12 +358,16 @@ insert into storage.buckets (id, name, public)
 values ('media', 'media', true)
 on conflict (id) do nothing;
 
+drop policy if exists "Publik membaca media" on storage.objects;
 create policy "Publik membaca media" on storage.objects
   for select using (bucket_id = 'media');
+drop policy if exists "Admin mengunggah media" on storage.objects;
 create policy "Admin mengunggah media" on storage.objects
   for insert with check (bucket_id = 'media' and public.is_admin());
+drop policy if exists "Admin memperbarui media" on storage.objects;
 create policy "Admin memperbarui media" on storage.objects
   for update using (bucket_id = 'media' and public.is_admin());
+drop policy if exists "Admin menghapus media" on storage.objects;
 create policy "Admin menghapus media" on storage.objects
   for delete using (bucket_id = 'media' and public.is_admin());
 

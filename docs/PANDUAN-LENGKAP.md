@@ -174,6 +174,8 @@ Mode demo berguna untuk mencoba seluruh alur — termasuk dashboard admin — se
 | Gejala | Penyebab & Solusi |
 |---|---|
 | Badge "Mode Demo" masih tampil | `config.js` belum terisi/tersimpan; cek tanda kutip dan koma pada URL & key |
+| ERROR `42P01: relation "public.admins" does not exist` saat menjalankan skema | Versi skema lama mendefinisikan fungsi `is_admin()` sebelum tabel `admins` dibuat — gunakan `sql/supabase-schema.sql` versi terbaru (fungsi didefinisikan setelah tabel), jalankan ulang SELURUH file dari database yang masih kosong |
+| Upload gambar gagal di panel admin | Ikuti diagnosis bertahap dengan `sql/cek-storage.sql` (cek bucket, kebijakan, daftar admin, user login) — lihat juga baris di bawah ini |
 | Upload logo gagal di mode Supabase | Bucket `media` belum dibuat/publik — lihat Bagian 4, atau gunakan *Uji Koneksi* di tab Koneksi Supabase |
 | Warna/logo tidak berubah di halaman publik | Tekan Ctrl+Shift+R (hard refresh) — pengaturan dimuat asinkron; pastikan tombol Simpan pada tab terkait sudah diklik |
 | Katalog kosong setelah connect | SQL belum dijalankan, atau seed tertimpa — cek Table Editor `applications` |
