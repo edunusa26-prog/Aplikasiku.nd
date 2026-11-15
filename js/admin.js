@@ -131,10 +131,29 @@
     return String(v || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
   }
   function setBusy(btn, on, text) {
+    if (!btn) return; /* aman: jangan crash bila tombol tidak ada */
     btn.disabled = on;
     btn.innerHTML = on ? '<i class="fa-solid fa-spinner fa-spin"></i> ' + text : btn.dataset.label;
   }
   function errToast(e) { UI.toast("error", "Terjadi kesalahan", String((e && e.message) || e)); }
+
+  /* ---- Validasi berkas gambar: WAJIB format PNG atau JPEG ---- */
+  var IMG_TYPES = { "image/png": "PNG", "image/jpg": "JPEG", "image/jpeg": "JPEG", "image/pjpeg": "JPEG" };
+  function validateImgFile(file, maxMB) {
+    if (!file) return "Berkas tidak ada.";
+    var t = String(file.type || "").toLowerCase();
+    if (!IMG_TYPES[t]) {
+      var ext = (String(file.name).split(".").pop() || "").toLowerCase();
+      if ((t === "" || t === "image/svg+xml") && (ext === "png" || ext === "jpg" || ext === "jpeg")) {
+        /* browser lama kadang tidak mengisi MIME — percayai ekstensi */
+      } else {
+        return "Format harus PNG atau JPEG (file .png, .jpg, .jpeg). Format lain seperti WEBP/GIF/SVG tidak didukung.";
+      }
+    }
+    if (file.size > maxMB * 1024 * 1024) return "Ukuran gambar maksimal " + maxMB + "MB. Kompres dulu gambarnya (cth: squoosh.app).";
+    return null; /* valid */
+  }
+  function imgErrToast(msg) { UI.toast("error", "Upload gambar gagal", msg); }
 
   /* =================== DASHBOARD =================== */
   function renderDashboard() {
@@ -328,14 +347,14 @@
         field('Tipe Harga', selectHTML("f-pricing", Object.keys(PRICING).map(function (k) { return { v: k, t: PRICING[k] }; }), app ? app.pricing_type : "konsultasi")) +
         field('Harga (Rp, isi 0 jika konsultasi/gratis)', inp("f-price", app ? app.price : 0, "number", "3500000")) +
         field('Thumbnail — URL', inp("f-thumb", app && app.thumbnail_url, "text", "https://... atau hasil upload")) +
-        field('Thumbnail — Upload', '<div class="upload-row"><label class="file-label"><input type="file" id="f-thumb-file" accept="image/*"><i class="fa-solid fa-upload"></i> Pilih Gambar</label><img id="f-thumb-prev" class="upload-preview" alt="preview"></div>', true) +
+        field('Thumbnail — Upload (PNG/JPEG)', '<div class="upload-row"><label class="file-label" id="f-thumb-label"><input type="file" id="f-thumb-file" accept=".png,.jpg,.jpeg,image/png,image/jpeg"><i class="fa-solid fa-upload"></i> <span>Pilih Gambar</span></label><button type="button" class="icon-btn" id="f-thumb-clear" title="Hapus gambar" style="display:none"><i class="fa-solid fa-trash-can"></i></button><img id="f-thumb-prev" class="upload-preview" alt="preview"><span class="upload-empty" id="f-thumb-empty"><i class="fa-regular fa-image"></i> Belum ada gambar</span></div>', true) +
         field('Deskripsi Singkat *', ta("f-short", app && app.short_description, 2, "1-2 kalimat untuk kartu katalog"), true) +
         field('Deskripsi Lengkap *', ta("f-full", app && app.full_description, 6, "Beberapa paragraf. Pisahkan paragraf dengan baris kosong."), true) +
         field('Latar Belakang Kebutuhan', ta("f-bg", app && app.background, 3, "Mengapa aplikasi ini dibuat?"), true) +
         field('Manfaat (satu per baris)', ta("f-benefits", lines(app && app.benefits), 4, "Manfaat 1\nManfaat 2"), true) +
         field('Fitur Utama * (satu per baris)', ta("f-features", lines(app && app.features), 6, "Fitur 1\nFitur 2"), true) +
         field('Screenshot (satu URL per baris)', ta("f-shots", lines(app && app.screenshots), 3, "https://..."), true) +
-        field('Screenshot — Upload (bisa lebih dari satu)', '<label class="file-label"><input type="file" id="f-shots-file" accept="image/*" multiple><i class="fa-solid fa-images"></i> Pilih Gambar</label><div class="up-list" id="f-shots-list"></div>', true) +
+        field('Screenshot — Upload PNG/JPEG (bisa lebih dari satu)', '<label class="file-label" id="f-shots-label"><input type="file" id="f-shots-file" accept=".png,.jpg,.jpeg,image/png,image/jpeg" multiple><i class="fa-solid fa-images"></i> <span>Pilih Gambar</span></label><div class="up-list" id="f-shots-list"></div>', true) +
         field('Link Demo (boleh kosong)', inp("f-demo", app && app.demo_url, "url", "https://demo...")) +
         field('Link Aplikasi Utama (boleh kosong)', inp("f-appurl", app && app.application_url, "url", "https://...")) +
         field('Link Video Demo / YouTube (opsional)', inp("f-video", app && app.video_url, "url", "https://youtube.com/watch?v=...")) +
@@ -345,26 +364,82 @@
         field('Tandai sebagai Data Contoh (label "Contoh" pada kartu)', '<label class="switch"><input type="checkbox" id="f-demo"' + (app && app.demo ? " checked" : "") + '><i></i></label>', true),
       onMount: function (form) {
         var prev = form.querySelector("#f-thumb-prev");
-        var syncPrev = function () { var u = form.querySelector("#f-thumb").value.trim(); if (u) prev.src = u; };
-        form.querySelector("#f-thumb").addEventListener("change", syncPrev);
-        if (app && app.thumbnail_url) { prev.src = app.thumbnail_url; }
-        prev.onerror = function () { prev.removeAttribute("src"); };
-        form.querySelector("#f-thumb-file").addEventListener("change", function () {
-          var file = this.files[0]; if (!file) return;
-          setBusy(null, false, "");
-          uploadOne(file, function (url) {
-            form.querySelector("#f-thumb").value = url;
-            prev.src = url;
-            UI.toast("success", "Thumbnail terunggah", MODE === "demo" ? "Demo: tersimpan sementara di browser." : url.slice(0, 60) + "...");
+        var prevEmpty = form.querySelector("#f-thumb-empty");
+        var thumbUrl = form.querySelector("#f-thumb");
+        var thumbLabel = form.querySelector("#f-thumb-label");
+        var thumbLabelHTML = thumbLabel.innerHTML;
+        var thumbClear = form.querySelector("#f-thumb-clear");
+
+        /* tampilkan / sembunyikan preview sesuai isi kolom URL */
+        function syncPreview() {
+          var u = thumbUrl.value.trim();
+          if (u) { prev.src = u; prev.style.display = ""; prevEmpty.style.display = "none"; thumbClear.style.display = ""; }
+          else { prev.removeAttribute("src"); prev.style.display = "none"; prevEmpty.style.display = ""; thumbClear.style.display = "none"; }
+        }
+        syncPreview();
+        thumbUrl.addEventListener("change", syncPreview);
+        thumbUrl.addEventListener("input", syncPreview);
+        prev.onerror = function () { prev.removeAttribute("src"); prev.style.display = "none"; prevEmpty.style.display = ""; thumbClear.style.display = "none"; };
+        thumbClear.addEventListener("click", function () {
+          thumbUrl.value = "";
+          syncPreview();
+          UI.toast("info", "Gambar dihapus dari draf", "Klik Simpan untuk menyimpan perubahan.");
+        });
+
+        /* ---- upload thumbnail (PNG/JPEG) — FIX: handler lama crash pada setBusy(null).
+           Listener dipasang pada LABEL (delegation) karena isi label — termasuk
+           <input type="file"> di dalamnya — diganti saat upload berjalan; dengan
+           delegation listener tetap hidup untuk upload berikutnya. ---- */
+        thumbLabel.addEventListener("change", function (e) {
+          var inputEl = e.target;
+          if (!inputEl || inputEl.id !== "f-thumb-file") return;
+          var file = inputEl.files[0];
+          inputEl.value = ""; /* reset agar file yang sama bisa dipilih ulang */
+          if (!file) return;
+          var isSupa = (DB.mode || window.APLIKASIKU_MODE) === "supabase";
+          var bad = validateImgFile(file, isSupa ? 5 : 10);
+          if (bad) return imgErrToast(bad);
+          thumbLabel.classList.add("is-busy");
+          thumbLabel.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Mengunggah...</span>';
+          DB.uploadImage(file, "thumbnails").then(function (url) {
+            thumbUrl.value = url;
+            syncPreview();
+            UI.toast("success", "Thumbnail terunggah", isSupa ? url.slice(0, 70) + "..." : "Demo: tersimpan sementara di browser ini.");
+          }).catch(function (e) {
+            imgErrToast(String((e && e.message) || e));
+          }).finally(function () {
+            thumbLabel.classList.remove("is-busy");
+            thumbLabel.innerHTML = thumbLabelHTML;
           });
         });
+
+        /* ---- upload screenshot (PNG/JPEG, multi) — delegation pada label ---- */
         var shotsTA = form.querySelector("#f-shots");
-        form.querySelector("#f-shots-file").addEventListener("change", function () {
-          var files = Array.from(this.files); if (!files.length) return;
-          uploadMany(files, function (urls) {
-            shotsTA.value = (shotsTA.value.trim() ? shotsTA.value.trim() + "\n" : "") + urls.join("\n");
-            renderShotList();
-            UI.toast("success", urls.length + " screenshot terunggah");
+        var shotsLabel = form.querySelector("#f-shots-label");
+        var shotsLabelHTML = shotsLabel.innerHTML;
+        shotsLabel.addEventListener("change", function (e) {
+          var inputEl = e.target;
+          if (!inputEl || inputEl.id !== "f-shots-file") return;
+          var files = Array.from(inputEl.files);
+          inputEl.value = "";
+          if (!files.length) return;
+          var isSupa = (DB.mode || window.APLIKASIKU_MODE) === "supabase";
+          for (var i = 0; i < files.length; i++) {
+            var bad = validateImgFile(files[i], isSupa ? 5 : 10);
+            if (bad) return imgErrToast(files[i].name + ": " + bad);
+          }
+          shotsLabel.classList.add("is-busy");
+          shotsLabel.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Mengunggah 0/' + files.length + "...</span>";
+          uploadMany(files, function (ok, urls) {
+            shotsLabel.classList.remove("is-busy");
+            shotsLabel.innerHTML = shotsLabelHTML;
+            if (ok && urls.length) {
+              shotsTA.value = (shotsTA.value.trim() ? shotsTA.value.trim() + "\n" : "") + urls.join("\n");
+              renderShotList();
+              UI.toast("success", urls.length + " screenshot terunggah", "Klik Simpan untuk menyimpan ke aplikasi.");
+            }
+          }, function (doneCount) {
+            shotsLabel.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Mengunggah ' + doneCount + "/" + files.length + "...</span>";
           });
         });
         function renderShotList() {
@@ -379,16 +454,20 @@
           });
         }
         renderShotList();
-        function uploadOne(file, cb) {
-          DB.uploadImage(file, "thumbnails").then(cb).catch(function (e) { UI.toast("error", "Upload gagal", String(e.message || e)); });
-        }
-        function uploadMany(files, cb) {
-          var urls = [], done = 0;
+        function uploadMany(files, cb, onProgress) {
+          var urls = [], done = 0, failed = 0;
           files.forEach(function (f) {
             DB.uploadImage(f, "screenshots").then(function (u) {
-              urls.push(u); if (++done === files.length) cb(urls);
-            }).catch(function (e) { if (++done === files.length && urls.length) cb(urls); else if (done === files.length) UI.toast("error", "Upload gagal", String(e.message || e)); });
+              urls.push(u); step();
+            }).catch(function (e) {
+              failed++; imgErrToast(f.name + ": " + String((e && e.message) || e)); step();
+            });
           });
+          function step() {
+            done++;
+            if (onProgress) onProgress(done);
+            if (done === files.length) cb(urls.length > 0, urls);
+          }
         }
       },
       onSave: function (form, done) {
@@ -762,8 +841,10 @@
     file.addEventListener("change", function () {
       var f = file.files && file.files[0];
       if (!f) return;
-      if (!/^image\//.test(f.type)) return UI.toast("error", "Bukan berkas gambar", "Pilih berkas PNG, JPG, SVG, atau WebP.");
       var isSupa = (DB.mode || window.APLIKASIKU_MODE) === "supabase";
+      /* slot identitas menerima PNG/JPEG/SVG (logo bisa SVG transparan) */
+      var okType = /^image\/(png|jpe?g|pjpeg|svg\+xml)$/i.test(f.type) || /\.(png|jpe?g|svg)$/i.test(f.name);
+      if (!okType) return UI.toast("error", "Format tidak didukung", "Gunakan berkas PNG, JPG, atau SVG.");
       var maxMB = isSupa ? 2 : 0.4;
       if (f.size > maxMB * 1024 * 1024) return UI.toast("error", "Ukuran terlalu besar", "Maksimal " + (isSupa ? "2MB pada mode Supabase." : "400KB pada mode demo — kompres dulu gambarnya."));
       var labelHTML = pick.innerHTML;

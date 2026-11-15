@@ -66,6 +66,8 @@ Verifikasi: **Storage** di sidebar → harus ada bucket `media`.
 
 Cara pakai: di dashboard admin → tambah/edit aplikasi → **Pilih Gambar** pada kolom thumbnail/screenshot. File terunggah ke `media/thumbnails/...` atau `media/screenshots/...` dan URL-nya otomatis terisi. URL gambar eksternal juga tetap didukung (kolom URL dapat diisi manual).
 
+Format gambar yang didukung: **PNG dan JPEG** (file `.png`, `.jpg`, `.jpeg`). Ukuran maksimal 5MB per gambar pada mode Supabase. Untuk mengedit gambar yang sudah ada: buka aplikasi lewat tombol **Edit**, klik tombol **Hapus gambar** (ikon tempat sampah di samping pratinjau) untuk mengosongkan, atau langsung pilih gambar baru — URL dan pratinjau otomatis diperbarui.
+
 Batas ukuran upload default Supabase adalah 50MB per file; kompres gambar ke ~200-500KB agar website tetap cepat.
 
 ## 5. Login Admin (Supabase Auth)
@@ -152,7 +154,7 @@ Website berjalan dalam **Mode Demo** bila `SUPABASE_URL`/`SUPABASE_ANON_KEY` di 
 
 - Seluruh halaman dan CRUD berfungsi memakai **data contoh** yang tersimpan di `localStorage` browser.
 - Login admin demo: `admin@aplikasiku.nd` / `demo1234` (tercantum di halaman login).
-- Upload gambar dibatasi 400KB dan tersimpan sementara di browser.
+- Upload gambar (PNG/JPEG) otomatis dikompres di browser (sisi terpanjang maks 1280px) agar muat di localStorage.
 - Data demo **tidak** terlihat oleh orang lain dan tidak menghubungi server apa pun.
 - Begitu Supabase diisi, mode demo otomatis nonaktif (badge "Mode Demo" hilang).
 
@@ -175,7 +177,7 @@ Mode demo berguna untuk mencoba seluruh alur — termasuk dashboard admin — se
 |---|---|
 | Badge "Mode Demo" masih tampil | `config.js` belum terisi/tersimpan; cek tanda kutip dan koma pada URL & key |
 | ERROR `42P01: relation "public.admins" does not exist` saat menjalankan skema | Versi skema lama mendefinisikan fungsi `is_admin()` sebelum tabel `admins` dibuat — gunakan `sql/supabase-schema.sql` versi terbaru (fungsi didefinisikan setelah tabel), jalankan ulang SELURUH file dari database yang masih kosong |
-| Upload gambar gagal di panel admin | Ikuti diagnosis bertahap dengan `sql/cek-storage.sql` (cek bucket, kebijakan, daftar admin, user login) — lihat juga baris di bawah ini |
+| Upload gambar gagal di panel admin | Pastikan format PNG/JPEG (maks 5MB mode Supabase). Bila tetap gagal, ikuti diagnosis bertahap dengan `sql/cek-storage.sql` (cek bucket, kebijakan, daftar admin, user login) — lihat juga baris di bawah ini |
 | Upload logo gagal di mode Supabase | Bucket `media` belum dibuat/publik — lihat Bagian 4, atau gunakan *Uji Koneksi* di tab Koneksi Supabase |
 | Warna/logo tidak berubah di halaman publik | Tekan Ctrl+Shift+R (hard refresh) — pengaturan dimuat asinkron; pastikan tombol Simpan pada tab terkait sudah diklik |
 | Katalog kosong setelah connect | SQL belum dijalankan, atau seed tertimpa — cek Table Editor `applications` |

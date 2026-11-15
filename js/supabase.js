@@ -107,6 +107,57 @@
     catch (e) { console.warn("Gagal menyimpan data demo (localStorage penuh?)", e); }
   }
 
+  /* ---------- Kompresi gambar untuk Mode Demo ----------
+     Bila berkas sudah kecil (<= ambang), dipakai apa adanya.
+     Bila besar, digambar ulang ke canvas: sisi terpanjang maks
+     1280px. PNG dicoba dipertahankan (transparan); bila hasilnya
+     masih besar, latar diisi putih lalu disimpan sebagai JPEG. */
+  function demoCompressImage(file, smallThreshold) {
+    return new Promise(function (resolve, reject) {
+      if (file.size <= smallThreshold) {
+        var fr = new FileReader();
+        fr.onload = function () { resolve(fr.result); };
+        fr.onerror = function () { reject(new Error("Gagal membaca berkas gambar.")); };
+        fr.readAsDataURL(file);
+        return;
+      }
+      var fr2 = new FileReader();
+      fr2.onerror = function () { reject(new Error("Gagal membaca berkas gambar.")); };
+      fr2.onload = function () {
+        var img = new Image();
+        img.onerror = function () { reject(new Error("Berkas bukan gambar yang valid.")); };
+        img.onload = function () {
+          try {
+            var MAX = 1280;
+            var scale = Math.min(1, MAX / Math.max(img.width || 1, img.height || 1));
+            var w = Math.max(1, Math.round((img.width || MAX) * scale));
+            var h = Math.max(1, Math.round((img.height || MAX) * scale));
+            var canvas = document.createElement("canvas");
+            canvas.width = w; canvas.height = h;
+            var ctx = canvas.getContext("2d");
+            var isPng = /png/i.test(String(file.type || "")) || /png$/i.test(String(file.name || ""));
+            if (isPng) {
+              ctx.drawImage(img, 0, 0, w, h);
+              var pngUrl = canvas.toDataURL("image/png");
+              if (pngUrl.length <= 700 * 1024) return resolve(pngUrl);
+              /* PNG masih besar (biasanya foto) — isi latar putih, simpan JPEG */
+              ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, w, h);
+              ctx.drawImage(img, 0, 0, w, h);
+              return resolve(canvas.toDataURL("image/jpeg", 0.85));
+            }
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL("image/jpeg", 0.85));
+          } catch (e) {
+            reject(new Error("Gagal memproses gambar: " + (e && e.message ? e.message : e)));
+          }
+        };
+        img.src = fr2.result;
+      };
+      fr2.readAsDataURL(file);
+    });
+  }
+
   function demoFilterApps(db, opt) {
     opt = opt || {};
     var items = clone(db.applications);
@@ -230,14 +281,19 @@
     },
     uploadImage: function (file, folder) {
       if (!file) return Promise.reject(new Error("File tidak ada"));
-      if (file.size > 400 * 1024) {
-        return Promise.reject(new Error("Mode Demo mendukung gambar maksimal 400KB. Untuk upload penuh, hubungkan Supabase Storage (lihat Panduan)."));
+      /* Validasi format: WAJIB PNG atau JPEG */
+      var t = String(file.type || "").toLowerCase();
+      var ext = (String(file.name).split(".").pop() || "").toLowerCase();
+      var okType = (t === "image/png" || t === "image/jpeg" || t === "image/jpg" || t === "image/pjpeg") ||
+        ((t === "" || t === "image/svg+xml") && (ext === "png" || ext === "jpg" || ext === "jpeg"));
+      if (!okType) return Promise.reject(new Error("Format harus PNG atau JPEG (.png / .jpg / .jpeg). Format lain (WEBP, GIF, SVG, dst.) tidak didukung."));
+      /* Mode demo: gambar besar otomatis dikompres di browser agar muat
+         di localStorage (dulu: gagal keras bila > 400KB). */
+      if (file.size > 10 * 1024 * 1024) {
+        return Promise.reject(new Error("Ukuran gambar maksimal 10MB. Kompres dulu gambarnya (cth: squoosh.app)."));
       }
-      return new Promise(function (resolve, reject) {
-        var fr = new FileReader();
-        fr.onload = function () { resolve(fr.result); };
-        fr.onerror = reject;
-        fr.readAsDataURL(file);
+      return demoCompressImage(file, 350 * 1024).then(function (dataUrl) {
+        return dataUrl;
       });
     },
     /* generik CRUD */
@@ -407,12 +463,38 @@
     },
     uploadImage: function (file, folder) {
       if (!file) return Promise.reject(new Error("File tidak ada"));
-      var ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      var path = (folder || "uploads") + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "." + ext;
-      return sb.storage.from(BUCKET).upload(path, file, { cacheControl: "3600", upsert: false })
+      /* Validasi format: WAJIB PNG atau JPEG */
+      var t = String(file.type || "").toLowerCase();
+      var ext = (String(file.name).split(".").pop() || "").toLowerCase();
+      var okType = (t === "image/png" || t === "image/jpeg" || t === "image/jpg" || t === "image/pjpeg") ||
+        ((t === "" || t === "image/svg+xml") && (ext === "png" || ext === "jpg" || ext === "jpeg"));
+      if (!okType) return Promise.reject(new Error("Format harus PNG atau JPEG (.png / .jpg / .jpeg). Format lain (WEBP, GIF, SVG, dst.) tidak didukung."));
+      if (file.size > 5 * 1024 * 1024) {
+        return Promise.reject(new Error("Ukuran gambar maksimal 5MB. Kompres dulu gambarnya (cth: squoosh.app)."));
+      }
+      var extSafe = (ext === "png" || ext === "jpg" || ext === "jpeg") ? ext : (t === "image/png" ? "png" : "jpg");
+      var path = (folder || "uploads") + "/" + Date.now() + "-" + Math.random().toString(36).slice(2, 8) + "." + extSafe;
+      return sb.storage.from(BUCKET).upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type || "image/jpeg" })
         .then(function (r) {
           if (r.error) throw r.error;
           return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+        })
+        .catch(function (e) {
+          /* Terjemahkan error storage yang sering terjadi menjadi petunjuk yang bisa ditindaklanjuti */
+          var msg = String((e && e.message) || e || "");
+          var m = e && e.message ? e : new Error(msg);
+          if (/bucket not found/i.test(msg)) {
+            m = new Error('Bucket "' + BUCKET + '" belum ada di Supabase Storage. Jalankan perbaikan (A) pada sql/cek-storage.sql di Supabase SQL Editor.');
+          } else if (/row-level security|permission denied|unauthorized|new row violates/i.test(msg)) {
+            m = new Error("Akses upload ditolak kebijakan storage (RLS). Jalankan perbaikan (B) untuk membuat kebijakan dan (C) untuk mendaftarkan akun admin Anda — lihat sql/cek-storage.sql.");
+          } else if (/payload too large|exceeds the maximum|too large/i.test(msg)) {
+            m = new Error("Ukuran berkas melebihi batas bucket storage. Kecilkan gambar lalu coba lagi.");
+          } else if (/mime|mime_type|invalid input/i.test(msg)) {
+            m = new Error("Tipe berkas tidak diizinkan bucket storage. Gunakan PNG atau JPEG.");
+          } else if (/fetch|network|Failed to fetch/i.test(msg)) {
+            m = new Error("Tidak dapat menghubungi server Supabase. Periksa koneksi internet / URL project Anda.");
+          }
+          throw m;
         });
     },
     upsertRow: function (table, row) {
