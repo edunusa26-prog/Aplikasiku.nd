@@ -261,7 +261,7 @@
   };
 
   window.__demoDB = demoDB;
-  window.__helpers = { uuid: uuid, slugify: slugify, delay: delay, clone: clone, attachCat: attachCat, mapCategoryName: mapCategoryName };
+  window.__helpers = { uuid: uuid, slugify: slugify, delay: delay, clone: clone, attachCat: attachCat, mapCategoryName: mapCategoryName, mergeSettings: mergeSettings };
 })();
 
 /* ============================================================
@@ -275,6 +275,7 @@
   var BUCKET = CFG.STORAGE_BUCKET || "media";
   var sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
   var H = window.__helpers;
+  var mergeSettings = H.mergeSettings; /* fungsi gabungan pengaturan — didefinisikan pada IIFE Mode Demo di atas */
   var DEFAULTS = window.DEMO_SETTINGS || {};
   var _catCache = null, _isAdmin = null;
 

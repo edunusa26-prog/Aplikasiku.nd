@@ -19,10 +19,10 @@
 window.APLIKASIKU_CONFIG = {
   /* --- Supabase (WAJIB diisi untuk produksi) ---
      Contoh: "https://abcdefghijk.supabase.co" */
-  SUPABASE_URL: "https://ayijdoyhrovcgulwdczd.supabase.co",
+  SUPABASE_URL: "",
 
   /* --- Supabase anon/public key (bukan service_role!) --- */
-  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aWpkb3locm92Y2d1bHdkY3pkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwMjUwMjMsImV4cCI6MjEwODYwMTAyM30.rs-8W4RaDFBQbGW4mT0Q18DAozrJjjLbx66feoT2KtA",
+  SUPABASE_ANON_KEY: "",
 
   /* Nama bucket Supabase Storage untuk logo/thumbnail/screenshot */
   STORAGE_BUCKET: "media",
@@ -30,7 +30,7 @@ window.APLIKASIKU_CONFIG = {
   /* Nomor WhatsApp default (format internasional tanpa + / spasi).
      Nilai ini hanya fallback awal — nomor aktif diambil dari
      Pengaturan Website di dashboard admin (tabel website_settings). */
-  DEFAULT_WHATSAPP: "6281214447790",
+  DEFAULT_WHATSAPP: "6281234567890",
 
   /* Domain final untuk SEO (canonical, sitemap, Open Graph).
      Contoh: "https://www.aplikasiku.nd" — biarkan kosong saat masih lokal. */
